@@ -7,7 +7,8 @@ var express = require('express')
   , routes = require('./routes')
   , life = require('./routes/life')
   , http = require('http')
-  , path = require('path');
+  , path = require('path')
+  , sqsWorker = require('./worker/sqs');
 
 var app = express();
 
@@ -32,6 +33,8 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index);
 app.post('/life/:life/image', life.postImage);
 app.post('/life/image', life.postImage);
+
+sqsWorker.start();
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

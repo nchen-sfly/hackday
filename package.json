@@ -6,6 +6,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "aws-sqs": "*",
     "express": "3.2.4",
     "hiredis": "*",
     "jade": "*",

@@ -1,5 +1,7 @@
 var _ = require('underscore')
   , http = require('http')
+  , querystring = require('querystring')
+  , responseCache = require('../lib/responseCache')
   , uuid = require('uuid')
   , FaceData = require('../face/data');
 
@@ -10,13 +12,15 @@ exports.postImage = function(req, res) {
     method: 'faceAddImages',
     params: [lifeUid, images],
   };
+  var path = '/json?' + querystring.stringify({json: JSON.stringify(data)});
 
   var options = {
     host: 'api.thislife.local',
-    port: 80,
-    path: '/json',
-    method: 'POST',
+    port: 13000,
+    path: path,
+    method: 'GET',
   };
+  console.log(options.host + ':' + options.port + options.path);
   var apiReq = http.request(options, function(apiRes) {
     console.log(options.host + ':' + options.port + ' => ' + apiRes.statusCode);
 
@@ -26,14 +30,19 @@ exports.postImage = function(req, res) {
     });
 
     apiRes.on('end', function() {
-      console.log(data.method + ': ' + JSON.stringify(output));
-      res.send(output);
+      console.log(data.method + ': ' + output);
+      var result = JSON.parse(output.replace(/^\(|\)$/g, ''));
+      if (!result.result || !result.result.success)
+        return res.send(500);
+
+      responseCache.add(lifeUid, res);
     });
   });
   apiReq.on('error', function(err) {
     console.log('Error: ' + err.message);
+    res.send(500);
   });
-  apiReq.write(JSON.stringify(data));
+//apiReq.write(JSON.stringify(data));
   apiReq.end();
 
 /*
