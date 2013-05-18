@@ -1,0 +1,44 @@
+<html>
+<head>
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
+    <script src='http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js'></script>
+</head>
+<body>
+<table id='container'></table>
+<script>
+function getUrlVars() {
+  var vars = [], hash;
+  var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+  for(var i = 0; i < hashes.length; i++) {
+    hash = hashes[i].split('=');
+    vars.push(hash[0]);
+    vars[hash[0]] = hash[1];
+  }
+  return vars;
+}
+
+function getFaceURL(lifeId, faceId) {
+  return 'http://thislife-staging.s3.amazonaws.com/face/' + lifeId + '/' + faceId + '.jpg';
+}
+
+$(document).ready(function() {
+  var query = getUrlVars();
+  $.ajax({
+    url: '/results/' + query.life,
+    success: function(data) {
+      var data = JSON.parse(data);
+      var lifeId = data.life;
+      _.each(data.unnamedSuggestions, function(group) {
+        var $groupInfo = $('<td>' + _.size(group.faces) + '</td>');
+        var $group = $('<td></td>');
+        _.each(group.faces, function(face) {
+          $group.append('<img src="' + getFaceURL(lifeId, face.id) + '" style="width: 100px; height: 100px;"/>');
+        });
+        $('#container').append($('<tr></tr>').append($groupInfo).append($group));
+      });
+    },
+  });
+});
+</script>
+</body>
+</html>

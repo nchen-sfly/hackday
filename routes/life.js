@@ -5,20 +5,36 @@ var _ = require('underscore')
   , uuid = require('uuid')
   , FaceData = require('../face/data');
 
+function getImageURL(url) {
+    if (url.indexOf('http://dim01-sc.dev.shutterfly.com') == 0)
+        return 'http://ec2-174-129-167-23.compute-1.amazonaws.com/dev/image' + url.substring(34);
+    return url;
+}
+
 exports.postImage = function(req, res) {
   var lifeUid = req.param('life') || uuid.v4();
   var images = req.body;
+
+  var newImages = {};
+  _.each(images, function(url, key) {
+    newImages[key] = getImageURL(url);
+  });
+
   var data = { 
     method: 'faceAddImages',
-    params: [lifeUid, images],
+    params: [lifeUid, newImages],
   };
-  var path = '/json?' + querystring.stringify({json: JSON.stringify(data)});
+  var json = JSON.stringify(data);
 
   var options = {
     host: 'api.thislife.local',
     port: 13000,
-    path: path,
-    method: 'GET',
+    path: '/json',
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": json.length
+    }
   };
   console.log(options.host + ':' + options.port + options.path);
   var apiReq = http.request(options, function(apiRes) {
@@ -31,9 +47,11 @@ exports.postImage = function(req, res) {
 
     apiRes.on('end', function() {
       console.log(data.method + ': ' + output);
-      var result = JSON.parse(output.replace(/^\(|\)$/g, ''));
-      if (!result.result || !result.result.success)
-        return res.send(500);
+      if (output) {
+        var result = JSON.parse(output);
+        if (result.result && !result.result.success)
+          return res.send(500);
+      }
 
       responseCache.add(lifeUid, res);
     });
@@ -42,7 +60,7 @@ exports.postImage = function(req, res) {
     console.log('Error: ' + err.message);
     res.send(500);
   });
-//apiReq.write(JSON.stringify(data));
+  apiReq.write(json);
   apiReq.end();
 
 /*

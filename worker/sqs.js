@@ -1,4 +1,6 @@
 var _ = require('underscore')
+  , fs = require('fs')
+  , path = require('path')
   , responseCache = require('../lib/responseCache')
   , util = require('util')
   , SQS = require('aws-sqs');
@@ -34,6 +36,11 @@ function SQSWorker() {
           var result = JSON.parse(msg.Body);
           var lifeUid = result.life;
           responseCache.reply(lifeUid, result);
+
+          var resultPath = path.resolve(__dirname, '..', 'public', 'results', lifeUid);
+          fs.writeFile(resultPath, msg.Body, function (err) {
+            console.log('writeFile(' + resultPath + '): ' + (err ? err : 'Success'));
+          });
         } catch (err) {
           console.error('Failed to parse msg: ' + msg.Body + ' : ' + err);
         }
@@ -47,7 +54,7 @@ function SQSWorker() {
       console.log('sqs.receiveCallback: ' + err);
     }
 
-    self.timer = setTimeout(self.receiveStart, 1000);
+    self.timer = setTimeout(self.receiveStart, 500);
   };
 }
 
